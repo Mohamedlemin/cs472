@@ -1,0 +1,24 @@
+
+- CommonJS:
+1 - If there's an error reading the file: The output will be as you correctly stated:
+   nextTick 1
+   promise 1
+   setTimeout 1
+   there is an error. can not read from file
+   setImmediate 1
+
+   else : 
+
+   nextTick 1
+   promise 1
+   setTimeout 1
+   setImmediate 1
+   [content of input.txt]
+
+- ES6 :
+ 
+    promise 1
+    nextTick 1
+    setImmediate 1
+    setTimeout 1
+    [content of input.txt] OR there is an error. can not read from file
