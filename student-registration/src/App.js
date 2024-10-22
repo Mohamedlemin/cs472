@@ -3,6 +3,7 @@ import Nav from './Nav';
 import Form from './Form';
 import StudentList from './StudentList';
 import Footer from './Footer';
+import Exo1 from './exo1';
 
 function App() {
   const [students, setStudents] = useState([]);
@@ -81,7 +82,8 @@ function App() {
 
   return (
     <div className="p-8">
-      <Nav />
+      <Exo1/>
+      {/* <Nav />
       {loading ? (
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-4">Loading...</h2>
@@ -92,7 +94,7 @@ function App() {
           <StudentList students={students} deleteStudent={deleteStudent} />
         </>
       )}
-      <Footer />
+      <Footer /> */}
     </div>
   );
 }

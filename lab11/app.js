@@ -1,13 +1,17 @@
 import express from "express"
 import studentRouter from './route/studentRoute.js'
+import bookRouter from './route/bookRouter.js'
+import cors from 'cors'
 
 const app = express();
 
-app.set("port", process.env.PORT || 3000);
+app.set("port", process.env.PORT || 3001);
 const port = app.get("port");
 
+app.use(cors());
 
 app.use('/api/v1/students', studentRouter)
+app.use('/books',bookRouter)
 
 
 

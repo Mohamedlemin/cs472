@@ -1,7 +1,7 @@
 const students = [
-    { id: 116257, name: "Anna Smith", program: "MBA" },
-    { id: 615789, name: "John Doe", program: "Compro" },
-    { id: 116868, name: "Tom Jerryh", program: "MBA" },
+    { id: "116257", name: "Anna Smith", program: "MBA" },
+    { id: "615789", name: "John Doe", program: "Compro" },
+    { id: "116868", name: "Tom Jerryh", program: "MBA" },
 ];
 
 export default class Student {
@@ -9,6 +9,14 @@ export default class Student {
         this.id = id;
         this.name = name;
         this.program = program;
+    }
+
+    static generateUniqueId() {
+        let newId;
+        do {
+            newId = Math.floor(Math.random() * 1000000);
+        } while (students.some(student => student.id === newId));
+        return newId;
     }
 
     static getAll() {
@@ -20,7 +28,7 @@ export default class Student {
     }
 
     static deleteStudentById(id) {
-        const index = students.findIndex(e => e.id === id);
+        const index = students.findIndex(e => e.id === String(id)); 
         if (index !== -1) {
             students.splice(index, 1);
             return true;
@@ -40,7 +48,6 @@ export default class Student {
     static getStudentsByQuery(query) {
         let filteredStudents = structuredClone(students);
 
-        // Filter by name or program if provided
         if (query.name) {
             filteredStudents = filteredStudents.filter(student => student.name.toLowerCase().includes(query.name.toLowerCase()));
         }
@@ -48,7 +55,6 @@ export default class Student {
             filteredStudents = filteredStudents.filter(student => student.program.toLowerCase() === query.program.toLowerCase());
         }
 
-        // Sort by name or program if specified
         if (query.sortBy) {
             const sortKey = query.sortBy;
             filteredStudents.sort((a, b) => a[sortKey].localeCompare(b[sortKey]));
@@ -58,6 +64,9 @@ export default class Student {
     }
 
     create() {
+        if (!this.id) {
+            this.id = Student.generateUniqueId();
+        }
         const student = students.find(e => e.id === this.id);
         if (!student) {
             students.push(this);
