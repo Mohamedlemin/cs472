@@ -13,13 +13,8 @@ const { Title, Text } = Typography;
 function App() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* <Sider width={200} style={{ background: '#fff' }}>
-        <Sidebar />
-      </Sider> */}
+     
       <Layout>
-        {/* <Header style={{ background: '#fff', padding: 0 }}>
-         
-        </Header> */}
         <Content style={{ margin: '24px 16px 0' }}>
           <MainContent />
         </Content>

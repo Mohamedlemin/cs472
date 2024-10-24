@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Input, Button, List, Typography, message, Space, Divider, Spin, Row, Col } from 'antd';
-import { AudioOutlined, SearchOutlined } from '@ant-design/icons';
+import { Row, Col, Typography, message, Space, Divider, Spin, List } from 'antd';
+import DefinitionList from './components/DefinitionList';
+import GenerateTextForm from './components/GenerateTextForm';
+import SearchForm from './components/SearchForm';
+import TextToSpeechButton from './components/TextToSpeach';
+
 
 const { Title, Text } = Typography;
 
@@ -13,17 +16,18 @@ const MainContent = () => {
   const [counter, setCounter] = useState(25);
   const [generatedText, setGeneratedText] = useState('');
   const [customPrompt, setCustomPrompt] = useState('');
-  const [loading, setLoading] = useState(false); // New state for loading indicator
-  const [hasMoreDefinitions, setHasMoreDefinitions] = useState(true); // New state to track if there are more definitions
-  const [definitionPage, setDefinitionPage] = useState(1); // New state to track the current page of definitions
-
+  const [loading, setLoading] = useState(false); 
+  const [hasMoreDefinitions, setHasMoreDefinitions] = useState(true);
+  const [definitionPage, setDefinitionPage] = useState(1); 
   useEffect(() => {
     const fetchPopularTerms = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/popular');
-        setPopularTerms(response.data);
+        const response = await fetch('http://localhost:5001/api/popular');
+        const data = await response.json();
+        setPopularTerms(data);
       } catch (err) {
         console.error(err);
+        setError('Failed to fetch popular terms');
       }
     };
 
@@ -47,56 +51,62 @@ const MainContent = () => {
       setError('Please enter a term to search');
       return;
     }
+    setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5001/api/search?term=${term}&page=1`);
+      const response = await fetch(`http://localhost:5001/api/search?term=${term}&page=1`);
+      const data = await response.json();
       setCustomPrompt(`From where this word ${term} come from?`);
-      setDefinitions(response.data);
+      setDefinitions(data);
       setError(null);
-      setHasMoreDefinitions(response.data.length === 10); // Check if there are more definitions
+      setHasMoreDefinitions(data.length === 10); 
+      setLoading(false);
     } catch (err) {
       message.error('term not found');
       setDefinitions([]);
+      setError('Failed to fetch definitions');
+      setLoading(false);
     }
   };
 
   const handleGenerateText = async () => {
-    setLoading(true); 
+    setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5001/api/generate-text', {
-        prompt: customPrompt + ' ' + term,
+      const response = await fetch('http://localhost:5001/api/generate-text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: customPrompt + ' ' + term,
+        }),
       });
-      setGeneratedText(response.data.generatedText || 'No answer provided');
-      setLoading(false); 
+      const data = await response.json();
+      setGeneratedText(data.generatedText || 'No answer provided');
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching generated text:', error);
       message.error('Failed to generate text');
-      setLoading(false); 
+      setError('Failed to generate text');
+      setLoading(false);
     }
   };
 
-  // const speakText = (text) => {
-  //   if ('speechSynthesis' in window) {
-  //     const utterance = new SpeechSynthesisUtterance(text);
-  //     window.speechSynthesis.speak(utterance);
-  //   } else {
-  //     message.error('Text-to-speech is not supported in this browser.');
-  //   }
-  // };
-
   const handleScroll = async (e) => {
     if (hasMoreDefinitions && e.target.scrollTop + e.target.offsetHeight >= e.target.scrollHeight) {
-      setLoading(true); 
+      setLoading(true);
       try {
         const nextPage = definitionPage + 1;
-        const response = await axios.get(`http://localhost:5001/api/search?term=${term}&page=${nextPage}`);
-        setDefinitions([...definitions, ...response.data]);
+        const response = await fetch(`http://localhost:5001/api/search?term=${term}&page=${nextPage}`);
+        const data = await response.json();
+        setDefinitions([...definitions, ...data]);
         setDefinitionPage(nextPage);
-        setHasMoreDefinitions(response.data.length === 10); 
-        setLoading(false); 
+        setHasMoreDefinitions(data.length === 10);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching more definitions:', error);
         message.error('Failed to fetch more definitions');
-        setLoading(false); 
+        setError('Failed to fetch more definitions');
+        setLoading(false);
       }
     }
   };
@@ -109,14 +119,10 @@ const MainContent = () => {
     }}>
       <br />
       <Title level={1} style={{ textAlign: 'center', color: '#3498db' }}>📚 Online English Dictionary</Title>
-      <Input.Search
-        placeholder="🔍 Search for a term"
-        enterButton={<Button type="primary" icon={<SearchOutlined />} style={{ backgroundColor: '#3498db', borderColor: '#3498db' }}>Search</Button>}
-        size="large"
-        value={term}
-        onChange={(e) => setTerm(e.target.value)}
+      <SearchForm
+        term={term}
         onSearch={handleSearch}
-        style={{ marginBottom: '24px' }}
+        onChange={(e) => setTerm(e.target.value)}
       />
       <div style={{ textAlign: 'center', marginTop: '24px' }}>
         <TextToSpeechButton text={term} />
@@ -124,48 +130,22 @@ const MainContent = () => {
 
       {error && <Text type="danger" style={{ color: '#f1c40f' }}>{error}</Text>}
       {definitions.length > 0 && (
-        <List
-          header={<Title level={4} style={{ color: '#3498db' }}>Definitions 📖</Title>}
-          bordered
-          style={{
-            marginTop: '24px',
-            backgroundColor: '#ffffff',
-            borderRadius: '8px',
-            overflowY: 'auto',
-            maxHeight: '300px'
-          }}
+        <DefinitionList
+          definitions={definitions}
           onScroll={handleScroll}
-          dataSource={definitions}
-          renderItem={(item) => (
-            <List.Item>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Space>
-                  <Text strong style={{ color: '#333' }}>{item.word}</Text>
-                  {item.wordtype && <Text type="secondary" style={{ color: '#333' }}>({item.wordtype})</Text>}
-                </Space>
-                <Text style={{ color: '#333' }}>{item.definition}</Text>
-              </Space>
-            </List.Item>
-          )}
+          loading={loading}
         />
       )}
 
       <Row gutter={16} style={{ marginTop: '24px' }}>
         <Col span={12} style={{marginTop: '10px'}}>
           <Title level={3} style={{ color: '#3498db' }}> Use or Generate Text with Custom Prompt 💬</Title>
-          <Input
-            placeholder={customPrompt ? customPrompt : `From where this word ${term} come from?`}
-            value={customPrompt}
+          <GenerateTextForm
+            customPrompt={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
-            style={{ marginBottom: '16px' }}
-          />
-          <Button
-            type="primary"
             onClick={handleGenerateText}
-            style={{ backgroundColor: 'green', color: 'white' }}
-          >
-            {loading ? <Spin size="small"  /> : 'Generate Text'}
-          </Button>
+            loading={loading}
+          />
 
           {generatedText && (
             <div style={{
@@ -200,29 +180,6 @@ const MainContent = () => {
         </Col>
       </Row>
     </div>
-  );
-};
-
-const TextToSpeechButton = ({ text }) => {
-  const speakText = () => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(utterance);
-    } else {
-      message.error('Text-to-speech is not supported in this browser.');
-    }
-  };
-
-  return (
-    <Button
-      size='large'
-      type="primary"
-      icon={<AudioOutlined />}
-      onClick={speakText}
-      disabled={!text}
-    >
-      Speak
-    </Button>
   );
 };
 
